@@ -1,0 +1,6 @@
+einops==0.6.1
+sentencepiece==0.1.99
+torch==2.0.1
+transformers==4.29.2
+# flash-attn==0.2.8
+# triton==2.0.0.dev20221202
