@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if args.hf_token is not None:
         login(token=args.hf_token)
 
-    download_hf_model_and_copy_tokenizer(args.model_name, model_path=args.model_path, tokenizer_path=args.tokenizer_path)
-
+    # download_hf_model_and_copy_tokenizer(args.model_name, model_path=args.model_path, tokenizer_path=args.tokenizer_path)
+    tensorizer_path = os.path.join(args.model_path, "model.tensors")
     if args.tensorize:
-        model = tensorize_model(args.model_name, dtype=args.dtype, tensorizer_path=args.model_path)
+        model = tensorize_model(args.model_name, model_path=args.model_path, dtype=args.dtype, tensorizer_path=tensorizer_path)

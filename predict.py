@@ -18,7 +18,7 @@ from subclass import YieldingReplitCode
 
 # For development, point to a local path on disk.
 # This is the path from which we pull weights when there's no COG_WEIGHTS environment variable (COG_WEIGHTS is a thing for trainable models)
-TENSORIZER_WEIGHTS_PATH = "model/replit-code-v1-3b.tensors"
+TENSORIZER_WEIGHTS_PATH = "model/model.tensors"
 
 # Set this to a GCP URL when pushing the model
 # TENSORIZER_WEIGHTS_PATH = None 
@@ -46,21 +46,24 @@ class Predictor(BasePredictor):
         self.model = self.load_tensorizer(
             weights=maybe_download(TENSORIZER_WEIGHTS_PATH), plaid_mode=True, cls=YieldingReplitCode, config_path=DEFAULT_CONFIG_PATH,
         )
-        self.tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH)
+        self.tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, trust_remote_code=True)
     
     def load_tensorizer(self, weights, plaid_mode, cls, config_path):
         st = time.time()
         print(f"deserializing weights from {weights}")
 
         config = AutoConfig.from_pretrained(config_path, trust_remote_code=True)
-        config.attn_config['attn_impl'] = 'triton'
+        # config.attn_config['attn_impl'] = 'triton'
+
+        with no_init_or_tensor():
+            model = YieldingReplitCode.from_pretrained('./model/', config=config, trust_remote_code=True)
 
 
-        model = no_init_or_tensor(
-            lambda: cls.from_pretrained(
-                None, config=config, state_dict=OrderedDict(), trust_remote_code=True,
-            )
-        )
+        # model = no_init_or_tensor(
+        #     lambda: cls.from_pretrained(
+        #         pretrained_model_name_or_path = './model', state_dict=OrderedDict(), trust_remote_code=True, attn_impl='triton',
+        #     )
+        # )
 
 
         deserialized = TensorDeserializer(weights, plaid_mode=True)
@@ -156,8 +159,8 @@ class Predictor(BasePredictor):
                 if not first_token_yielded and not prev_ids and cur_id == 187:
                     continue
 
-                # underscore means a space, means we yield previous tokens
-                if cur_token.startswith("Ġ"):  # this is not a standard underscore.
+                # Ġ means a space, means we yield previous tokens
+                if cur_token.startswith("Ġ"):  # this is not a standard G.
                     # first token
                     if not prev_ids:
                         prev_ids = [cur_id]
