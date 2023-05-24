@@ -1,5 +1,4 @@
-# cog-mpt-7b-storywriter-65k
-
+# replit-code-v1-3b
 
 [![Replicate](https://replicate.com/replicate/replit-code-v1-3b/badge)](https://replicate.com/replicate/replit-code-v1-3b) 
 
