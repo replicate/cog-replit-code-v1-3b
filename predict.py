@@ -18,7 +18,8 @@ from subclass import YieldingReplitCode
 
 # For development, point to a local path on disk.
 # This is the path from which we pull weights when there's no COG_WEIGHTS environment variable (COG_WEIGHTS is a thing for trainable models)
-TENSORIZER_WEIGHTS_PATH = "model/model.tensors"
+# TENSORIZER_WEIGHTS_PATH = "model/model.tensors"
+TENSORIZER_WEIGHTS_PATH = "gs://replicate-weights/replit-code-v1-3b/model.tensors"
 
 # Set this to a GCP URL when pushing the model
 # TENSORIZER_WEIGHTS_PATH = None 
@@ -53,17 +54,17 @@ class Predictor(BasePredictor):
         print(f"deserializing weights from {weights}")
 
         config = AutoConfig.from_pretrained(config_path, trust_remote_code=True)
-        # config.attn_config['attn_impl'] = 'triton'
+        config.attn_config['attn_impl'] = 'triton'
 
-        with no_init_or_tensor():
-            model = YieldingReplitCode.from_pretrained('./model/', config=config, trust_remote_code=True)
+        # with no_init_or_tensor():
+        #     model = YieldingReplitCode.from_pretrained('./model/', config=config, trust_remote_code=True)
 
 
-        # model = no_init_or_tensor(
-        #     lambda: cls.from_pretrained(
-        #         pretrained_model_name_or_path = './model', state_dict=OrderedDict(), trust_remote_code=True, attn_impl='triton',
-        #     )
-        # )
+        model = no_init_or_tensor(
+            lambda: cls.from_pretrained(
+                None, config=config, state_dict=OrderedDict(), trust_remote_code=True,
+            )
+        )
 
 
         deserialized = TensorDeserializer(weights, plaid_mode=True)
@@ -168,7 +169,7 @@ class Predictor(BasePredictor):
 
                     # there are tokens to yield
                     else:
-                        token = self.tokenizer.decode(prev_ids)
+                        token = self.tokenizer.decode(prev_ids, clean_up_tokenization_spaces=False)
                         prev_ids = [cur_id]
 
                         if not first_token_yielded:
@@ -188,7 +189,7 @@ class Predictor(BasePredictor):
                     continue
 
             # remove any special tokens such as </s>
-            token = self.tokenizer.decode(prev_ids, skip_special_tokens=True)
+            token = self.tokenizer.decode(prev_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
             if not first_token_yielded:
                 # no leading space for first token
                 token = token.strip()

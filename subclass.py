@@ -10,9 +10,10 @@ from transformers.generation.logits_process import  LogitsProcessorList
 from transformers.generation.stopping_criteria import StoppingCriteriaList, validate_stopping_criteria
 from transformers.generation.utils import SampleOutput, SampleDecoderOnlyOutput, SampleEncoderDecoderOutput
 
-from transformers import AutoModelForCausalLM
+# from transformers import AutoModelForCausalLM
+from model.modeling_mpt import MPTForCausalLM
 
-class YieldingReplitCode(AutoModelForCausalLM):
+class YieldingReplitCode(MPTForCausalLM):
     """Overriding sample to yield tokens"""
     def sample(
             self,

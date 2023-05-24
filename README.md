@@ -1,181 +1,88 @@
----
-license: cc-by-sa-4.0
-datasets:
-- bigcode/the-stack-dedup
-tags:
-- code
-language:
-- code
-programming_language: 
-- Markdown
-- Java
-- JavaScript
-- Python
-- TypeScript
-- PHP
-- SQL
-- JSX
-- reStructuredText
-- Rust
-- C
-- CSS
-- Go
-- C++
-- HTML
-- Vue
-- Ruby
-- Jupyter Notebook
-- R
-- Shell
-model-index:
-- name: replit-code-v1-3b
-  results:
-  - task: 
-      name: Code Generation
-      type: code-generation
-    dataset:
-      name: "HumanEval" 
-      type: openai_humaneval
-    metrics:
-    - name: pass@1
-      type: pass@1
-      value: 0.219
-      verified: false
----
+# cog-mpt-7b-storywriter-65k
+[![Replicate](https://replicate.com/replicate/mpt-7b-storywriter/badge)](https://replicate.com/replicate/mpt-7b-storywriter) 
 
+A cog implementation of MosaicML's MPT-7B-StoryWriter-65k+ Large Language Model
 
-# replit-code-v1-3b
-Developed by: Replit, Inc.
+This is a guide to running MPT-7B-StoryWriter-65k+ in the cloud using Replicate. You'll use the [Cog](https://github.com/replicate/cog) command-line tool to package the model and push it to Replicate as a web interface and API.
 
-[**🧑‍💻 Test it on our Demo Space! 🧑‍💻**](https://huggingface.co/spaces/replit/replit-code-v1-3b-demo)
+MPT-7B-StoryWriter-65k+ is a language model that specializes in generating fictional stories with lengthy context lengths. The model was created by finetuning MPT-7B with a context length of 65k tokens on a filtered fiction subset of the books3 dataset. Thanks to ALiBi, the model can extrapolate beyond 65k tokens at inference time, allowing for longer story generations. The MosaicML team demonstrated the ability to generate stories as long as 84k tokens on a single node of 8 A100-80GB GPUs in their blog [post](https://www.mosaicml.com/blog/mpt-7b).
 
-## Model Description
-`replit-code-v1-3b` is a 2.7B Causal Language Model focused on **Code Completion**. The model has been trained on a subset of the [Stack Dedup v1.2 dataset](https://arxiv.org/abs/2211.15533).
+## Prerequisites
 
-The training mixture includes **20 different languages**, listed here in descending order of number of tokens: 
-<br/>
-`Markdown`, `Java`, `JavaScript`, `Python`, `TypeScript`, `PHP`, `SQL`, `JSX`, `reStructuredText`, `Rust`, `C`, `CSS`, `Go`, `C++`, `HTML`, `Vue`, `Ruby`, `Jupyter Notebook`, `R`, `Shell`
-<br/>
-In total, the training dataset contains 175B tokens, which were repeated over 3 epochs -- in total, `replit-code-v1-3b` has been trained on **525B** tokens (~195 tokens per parameter).
+- **GPU machine**. You'll need a Linux machine with an NVIDIA GPU attached and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker) installed. If you don't already have access to a machine with a GPU, check out our [guide to getting a 
+GPU machine](https://replicate.com/docs/guides/get-a-gpu-machine).
 
-The model has been trained on the [MosaicML](https://www.mosaicml.com/) platform with 256 x A100-40GB GPUs, leveraging their latest [LLM examples repo](https://github.com/mosaicml/examples/tree/release/v0.0.4/examples/llm).
-<br/>
-`replit-code-v1-3b` is powered by state-of-the-art LLM techniques, such as: 
-[Flash Attention](https://arxiv.org/abs/2205.14135) for fast training and inference,
-[AliBi positional embeddings](https://arxiv.org/abs/2108.12409) to support variable context length at inference time, 
-[LionW optimizer](https://arxiv.org/abs/2302.06675), 
-etc.
+- **Docker**. You'll be using the [Cog](https://github.com/replicate/cog) command-line tool to build and push a model. Cog uses Docker to create containers for models.
 
-## Intended Use
-Replit intends this model be used by anyone as a foundational model for application-specific fine-tuning without strict limitations on commercial use.
+## Step 0: Install Cog
 
-## Limitations
-The pre-training dataset may have contained offensive or inappropriate content even after applying data cleansing filters, and such content may be reflected in model generated text. We recommend that users exercise reasonable caution when using in production systems. Do not use for any applications that may cause harm or distress to individuals or groups.
-
-## License
-The model checkpoint and vocabulary file are licensed under the Creative Commons license (CC BY-SA-4.0).  Under the license, you must give credit to Replit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests that Replit endorses you or your use.
-
-## Contact
-For questions and comments about the model, please post in the community section. 
-
-## How to Use
-First of all, you need to install the latest versions of the following dependencies:
-```
-einops
-sentencepiece
-torch
-transformers
-```
-
-You can then load the model as follows:
-```python
-from transformers import AutoModelForCausalLM
-
-# load model
-model = AutoModelForCausalLM.from_pretrained('replit/replit-code-v1-3b', trust_remote_code=True)
-```
-
-To use the optimized Triton implementation of FlashAttention on GPUs with BF16 precision, first install the following dependencies: 
-```
-flash-attn==0.2.8
-triton==2.0.0.dev20221202
-```
-
-Then, move the model to `bfloat16` and use it as follows:
-```python
-from transformers import AutoModelForCausalLM
-
-# load model
-model = AutoModelForCausalLM.from_pretrained('replit/replit-code-v1-3b', trust_remote_code=True, attn_impl='triton')
-model.to(device='cuda:0', dtype=torch.bfloat16)
-
-# forward pass
-x = torch.tensor([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])
-x = x.to(device='cuda:0')
-y = model(x)
+First, [install Cog](https://github.com/replicate/cog#install):
 
 ```
-
-Note that `trust_remote_code=True` is passed to the `from_pretrained` method because ReplitLM is not a class in the
-[Transformers](https://huggingface.co/docs/transformers/index) library. 
-
-### Tokenizer
-
-We have trained a custom SentencePiece Unigram tokenizer optimized with a vocabulary specifically for code of 32768 tokens.
-
-Note that using this requires the `sentencepiece` library to be installed. 
-
-The tokenizer can be used as follows:
-
-```python
-from transformers import AutoTokenizer
-
-# load tokenizer
-tokenizer = AutoTokenizer.from_pretrained('replit/replit-code-v1-3b', trust_remote_code=True)
-
-# single input encoding + generation
-x = tokenizer.encode('def hello():\n  print("hello world")\n', return_tensors='pt')
-y = model.generate(x)
-
-# decoding, clean_up_tokenization_spaces=False to ensure syntactical correctness
-generated_code = tokenizer.decode(y[0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
-print(generated_code)
+sudo curl -o /usr/local/bin/cog -L "https://github.com/replicate/cog/releases/latest/download/cog_$(uname -s)_$(uname -m)"
+sudo chmod +x /usr/local/bin/cog
 ```
 
-Note that: 
-- `trust_remote_code=True` is passed to the `from_pretrained` method because ReplitLM is not a class in the [Transformers](https://huggingface.co/docs/transformers/index) library. 
-- `clean_up_tokenization_spaces=False` is meant to avoid removing spaces in the output, because that would affect the syntactical correctness of the generated code. 
+## Step 1: Set up weights
+
+You can use the following script to pull the model weights from the Hugging Face Hub. We also recommend using `tensorizer` to tensorize your weights, which will dramatically reduce the time it takes to load your model. 
 
 
-### Generation
-
-You can generate code using the `transformers` library as follows:
-
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-tokenizer = AutoTokenizer.from_pretrained('replit/replit-code-v1-3b', trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained('replit/replit-code-v1-3b', trust_remote_code=True)
-
-x = tokenizer.encode('def fibonacci(n): ', return_tensors='pt')
-y = model.generate(x, max_length=100, do_sample=True, top_p=0.95, top_k=4, temperature=0.2, num_return_sequences=1, eos_token_id=tokenizer.eos_token_id)
-
-# decoding, clean_up_tokenization_spaces=False to ensure syntactical correctness
-generated_code = tokenizer.decode(y[0], skip_special_tokens=True, clean_up_tokenization_spaces=False)
-print(generated_code)
+```
+chmod +x scripts/download_and_prepare_model.py
+cog run python scripts/download_and_prepare_model.py --model_name mosaicml/mpt-7b-storywriter --model_path model --tensorize --tensorizer_path model/mpt-7b-storywriter-65.tensors
 ```
 
-Experiment with different decoding methods and parameters to get the best results for your use case.
+## Step 2: Run the model
 
-### Post Processing
+You can run the model locally to test it:
 
-Note that as with all code generation models, post-processing of the generated code is important. In particular, the following post-processing steps are recommended:
-- stop generation when the EOS token is encountered
-- remove trailing whitespaces
-- set `max_tokens` to a reasonable value based on your completion use case
-- truncate generation to stop words such as `return`, `def`, "```", "`\n\n\n`" to avoid generating incomplete code when `max_tokens` is larger than the length of the expected generated code.
+```
+cog predict -i prompt="On a dark and stormy night "
+```
 
+## Step 3: Push your model weights to cloud storage
 
+If you want to deploy your own cog version of this model, we recommend pushing the tensorized weights to a public bucket. You can then configure the `setup` method in `predict.py` to pull the tensorized weights. 
 
-## Model Hash
-5bc28ce32c6f9aec935ead7b60ea1c46
+For example, with GCP, you can replace `<your_bucket>` with your GCP bucket and run: 
+
+```
+gsutil -m cp -r model/* gs://<your_bucket>/replit-code-v1-3b/
+```
+
+This will push both the original model weights and the tensorized weights to the specified path. 
+
+Currently, we provide boiler-plate code for pulling weights from GCP. To use the current configuration, simply set `TENSORIZER_WEIGHTS_PATH` to the public Google Cloud Storage Bucket path of your tensorized model weights. At setup time, they'll be downloaded and loaded into memory. 
+
+Alternatively, you can implement your own solution using your cloud storage provider of choice. 
+
+To see if the remote weights configuration works, you can run the model locally.
+
+## Step 4: Create a model on Replicate
+
+Go to [replicate.com/create](https://replicate.com/create) to create a Replicate model.
+
+Make sure to specify "private" to keep the model private.
+
+## Step 5: Configure the model to run on A100 GPUs
+
+Replicate supports running models on a variety of GPUs. The default GPU type is a T4, but for best performance you'll want to configure your model to run on an A100.
+
+Click on the "Settings" tab on your model page, scroll down to "GPU hardware", and select "A100". Then click "Save".
+
+## Step 6: Push the model to Replicate
+
+Log in to Replicate:
+
+```
+cog login
+```
+
+Push the contents of your current directory to Replicate, using the model name you specified in step 3:
+
+```
+cog push r8.im/username/modelname
+```
+
+[Learn more about pushing models to Replicate.](https://replicate.com/docs/guides/push-a-model)
