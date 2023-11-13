@@ -19,22 +19,21 @@ from subclass import YieldingReplitCode
 # For development, point to a local path on disk.
 # This is the path from which we pull weights when there's no COG_WEIGHTS environment variable (COG_WEIGHTS is a thing for trainable models)
 # TENSORIZER_WEIGHTS_PATH = "model/model.tensors"
-TENSORIZER_WEIGHTS_PATH = "gs://replicate-weights/replit-code-v1-3b/model.tensors"
+TENSORIZER_WEIGHTS_URL = "https://weights.replicate.delivery/default/replit-code-v1-3b/model.tensors"
+TENSORIZER_WEIGHTS_PATH = "model/model.tensors"
 
 # Set this to a GCP URL when pushing the model
-# TENSORIZER_WEIGHTS_PATH = None 
+# TENSORIZER_WEIGHTS_PATH = None
 
 DEFAULT_CONFIG_PATH = "model/"
 TOKENIZER_PATH = "model/"
 
-def maybe_download(path):
-    if path.startswith("gs://"):
-        st = time.time()
-        output_path = "/tmp/weights.tensors"
-        subprocess.check_call(["gcloud", "storage", "cp", path, output_path])
-        print(f"weights downloaded in {time.time() - st}")
-        return output_path
-    return path
+def download_weights(url, dest):
+    start = time.time()
+    print("downloading url: ", url)
+    print("downloading to: ", dest)
+    subprocess.check_call(["pget", url, dest], close_fds=False)
+    print("downloading took: ", time.time() - start)
 
 
 class Predictor(BasePredictor):
@@ -44,11 +43,14 @@ class Predictor(BasePredictor):
         # set TOKENIZERS_PARALLELISM to false to avoid a warning
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+        if not os.path.exists(TENSORIZER_WEIGHTS_PATH):
+            download_weights(TENSORIZER_WEIGHTS_URL, TENSORIZER_WEIGHTS_PATH)
+
         self.model = self.load_tensorizer(
-            weights=maybe_download(TENSORIZER_WEIGHTS_PATH), plaid_mode=True, cls=YieldingReplitCode, config_path=DEFAULT_CONFIG_PATH,
+            weights=TENSORIZER_WEIGHTS_PATH, plaid_mode=True, cls=YieldingReplitCode, config_path=DEFAULT_CONFIG_PATH,
         )
         self.tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_PATH, trust_remote_code=True)
-    
+
     def load_tensorizer(self, weights, plaid_mode, cls, config_path):
         st = time.time()
         print(f"deserializing weights from {weights}")
@@ -180,7 +182,7 @@ class Predictor(BasePredictor):
                                 # End token
                 elif cur_token == "<|endoftext|>":
                     break
-                
+
                 elif stop_sequence and cur_token == stop_sequence:
                     break
 
